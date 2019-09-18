@@ -279,6 +279,42 @@ class CheckPVE:
         else:
             self.checkMessage = "All services running"
 
+    def checklxcrunning(self):
+        url = self.getURL('nodes/{}/lxc'.format(self.options.node))
+        data = self.request(url)
+
+        running = {}
+        for machine in data:
+            if machine['status'] == 'running':
+                running[machine['name']] = machine['name']
+
+        if running:
+            self.checkResult = NagiosState.OK
+            message = "{} machines running:\n\n".format(len(running))
+            message += "\n".join(['* {}: {}'.format(i, running[i]) for i in running])
+            self.checkMessage = message
+        else:
+            self.checkMessage = "All services running"
+
+
+
+    def checkqemurunning(self):
+        url = self.getURL('nodes/{}/qemu'.format(self.options.node))
+        data = self.request(url)
+
+        running = {}
+        for machine in data:
+            if machine['status'] == 'running':
+                running[machine['name']] = machine['name']
+
+        if running:
+            self.checkResult = NagiosState.OK
+            message = "{} machines running:\n\n".format(len(running))
+            message += "\n".join(['* {}: {}'.format(i, running[i]) for i in running])
+            self.checkMessage = message
+        else:
+            self.checkMessage = "All services running"
+
     def checkSubscription(self):
         url = self.getURL('nodes/{}/subscription'.format(self.options.node))
         data = self.request(url)
@@ -472,6 +508,10 @@ class CheckPVE:
                 self.checkSubscription()
             elif self.options.mode == 'storage':
                 self.checkStorage(self.options.name)
+            elif self.options.mode == 'lxc':
+                self.checklxcrunning()
+            elif self.options.mode == 'qemu':
+                self.checkqemurunning()
             elif self.options.mode in ['vm', 'vm_status']:
                 only_status = self.options.mode == 'vm_status'
 
@@ -508,7 +548,7 @@ class CheckPVE:
 
         check_opts.add_argument("-m", "--mode",
                                 choices=('cluster', 'version', 'cpu', 'memory', 'storage', 'io_wait', 'updates', 'services',
-                                         'subscription', 'vm', 'vm_status', 'replication', 'disk-health'),
+                                         'subscription', 'vm', 'vm_status', 'replication', 'disk-health', 'qemu', 'lxc'),
                                 required=True,
                                 help="Mode to use.")
 
