@@ -279,6 +279,29 @@ class CheckPVE:
         else:
             self.checkMessage = "All services running"
 
+    def checkMachinesrunning(self):
+        url_qemu = self.getURL('nodes/{}/qemu'.format(self.options.node))
+        data_qemu = self.request(url_qemu)
+        url_lxc = self.getURL('nodes/{}/lxc'.format(self.options.node))
+        data_lxc = self.request(url_lxc)
+
+        running = {}
+        for machine_qemu in data_qemu:
+            if machine_qemu['status'] == 'running':
+                running[machine_qemu['name']] = machine_qemu['name']
+
+        for machine_lxc in data_lxc:
+            if machine_lxc['status'] == 'running':
+                running[machine_lxc['name']] = machine_lxc['name']
+        if running:
+            self.checkResult = NagiosState.OK
+            message = "{} machines running:\n\n".format(len(running))
+            message += "\n".join(['* {}: {}'.format(i, running[i]) for i in running])
+            self.checkMessage = message
+        else:
+            self.checkMessage = "All services running"
+
+
     def checklxcrunning(self):
         url = self.getURL('nodes/{}/lxc'.format(self.options.node))
         data = self.request(url)
@@ -512,6 +535,8 @@ class CheckPVE:
                 self.checklxcrunning()
             elif self.options.mode == 'qemu':
                 self.checkqemurunning()
+            elif self.options.mode == 'machines':
+                self.checkMachinesrunning()
             elif self.options.mode in ['vm', 'vm_status']:
                 only_status = self.options.mode == 'vm_status'
 
@@ -548,7 +573,7 @@ class CheckPVE:
 
         check_opts.add_argument("-m", "--mode",
                                 choices=('cluster', 'version', 'cpu', 'memory', 'storage', 'io_wait', 'updates', 'services',
-                                         'subscription', 'vm', 'vm_status', 'replication', 'disk-health', 'qemu', 'lxc'),
+                                         'subscription', 'vm', 'vm_status', 'replication', 'disk-health', 'machines', 'qemu', 'lxc'),
                                 required=True,
                                 help="Mode to use.")
 
